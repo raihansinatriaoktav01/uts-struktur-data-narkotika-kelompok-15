@@ -1293,3 +1293,132 @@ public class MainFrame extends JFrame {
             form.add(labelField);
             form.add(input[i]);
         }
+        form.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JScrollPane scrollForm = new JScrollPane(form);
+        scrollForm.setBorder(BorderFactory.createLineBorder(GARIS));
+        gayaScroll(scrollForm);
+        scrollForm.setPreferredSize(new Dimension(700, 450));
+
+        int pilihan = JOptionPane.showConfirmDialog(
+                this,
+                scrollForm,
+                judul,
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (pilihan != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        String[] hasil = new String[input.length];
+        for (int i = 0; i < input.length; i++) {
+            hasil[i] = input[i].getText().trim();
+        }
+
+        return hasil;
+    }
+
+    private String[] labelFormPutusan() {
+        return new String[]{
+                "Case ID",
+                "Nomor Perkara",
+                "Pengadilan",
+                "Tanggal Putusan (YYYY-MM-DD)",
+                "Terdakwa Kode",
+                "Jenis Narkotika",
+                "Berat Barang Bukti (gram)",
+                "Pasal Dakwaan",
+                "Pasal Terbukti",
+                "Tuntutan (bulan)",
+                "Vonis (bulan)",
+                "Denda (Rp)",
+                "Barang Bukti",
+                "Keadaan Memberatkan",
+                "Keadaan Meringankan",
+                "Source Pages"
+        };
+    }
+
+    private String aman(String teks) {
+        return teks == null ? "" : teks;
+    }
+
+    private Putusan buatPutusanDariForm(String[] nilai, int posisiYangDiedit) {
+        try {
+            String caseId = nilai[0].trim();
+            String nomorPerkara = nilai[1].trim();
+            String pengadilan = nilai[2].trim();
+
+            if (caseId.isEmpty()
+                    || nomorPerkara.isEmpty()
+                    || pengadilan.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Case ID, Nomor Perkara, dan Pengadilan harus diisi."
+                );
+                return null;
+            }
+
+            for (int i = 0; i < controller.jumlahPutusan(); i++) {
+                if (i == posisiYangDiedit) {
+                    continue;
+                }
+
+                Putusan dataLain = controller.ambilPutusan(i);
+
+                if (dataLain.getCaseId().equalsIgnoreCase(caseId)) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Case ID tersebut sudah digunakan."
+                    );
+                    return null;
+                }
+            }
+
+            LocalDate tanggal = nilai[3].isEmpty()
+                    ? null
+                    : LocalDate.parse(nilai[3]);
+
+            double berat = nilai[6].isEmpty()
+                    ? 0
+                    : Double.parseDouble(nilai[6]);
+
+            int tuntutan = nilai[9].isEmpty()
+                    ? 0
+                    : Integer.parseInt(nilai[9]);
+
+            int vonis = nilai[10].isEmpty()
+                    ? 0
+                    : Integer.parseInt(nilai[10]);
+
+            long denda = nilai[11].isEmpty()
+                    ? 0
+                    : Long.parseLong(nilai[11]);
+
+            if (berat < 0 || tuntutan < 0 || vonis < 0 || denda < 0) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Berat, tuntutan, vonis, dan denda tidak boleh negatif."
+                );
+                return null;
+            }
+
+            return new Putusan(
+                    caseId,
+                    nomorPerkara,
+                    pengadilan,
+                    tanggal,
+                    nilai[4],
+                    nilai[5],
+                    berat,
+                    nilai[7],
+                    nilai[8],
+                    tuntutan,
+                    vonis,
+                    denda,
+                    nilai[12],
+                    nilai[13],
+                    nilai[14],
+                    nilai[15]
+            );
