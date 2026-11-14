@@ -511,3 +511,143 @@ public class MainFrame extends JFrame {
         komponen.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
         return komponen;
     }
+    private JLabel labelKecil(String teks) {
+        JLabel label = new JLabel(teks);
+        label.setFont(font(Font.PLAIN, 12));
+        label.setForeground(TEKS_REdup);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setBorder(BorderFactory.createEmptyBorder(0, 2, 5, 0));
+        return label;
+    }
+
+    private JTextField buatInput(String petunjuk) {
+        return new InputModern(petunjuk);
+    }
+
+    private void aturTampilanInput(JTextField input) {
+        input.setBackground(INPUT);
+        input.setForeground(TEKS);
+        input.setCaretColor(Color.WHITE);
+        input.setSelectionColor(PILIHAN);
+        input.setFont(font(Font.PLAIN, 13));
+        input.setBorder(
+                BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(GARIS),
+                        BorderFactory.createEmptyBorder(6, 9, 6, 9)
+                )
+        );
+    }
+
+    private void perbaruiTombolUrut() {
+        tombolUrut[0].setAktif(modeUrut == 1);
+        tombolUrut[1].setAktif(modeUrut == 2);
+        tombolUrut[2].setAktif(modeUrut == 0);
+    }
+
+    // Kartu ringkasan di header
+    private void perbaruiRingkasan() {
+        boolean valid = controller.validasiStruktur();
+
+        chipTotal.set(String.valueOf(controller.jumlahPutusan()), TEKS);
+        chipTampil.set(String.valueOf(jumlahTampil),
+                kriteriaAktif == null ? TEKS : EMAS);
+        chipInvarian.set(valid ? "Valid" : "Rusak",
+                valid ? new Color(140, 190, 164) : new Color(214, 128, 132));
+    }
+
+    // ================== Komponen kustom ==================
+
+    private static String pilihFont() {
+        try {
+            String[] pilihan = {"Segoe UI", "Inter", "Helvetica Neue",
+                    "Roboto", "Ubuntu", "Noto Sans"};
+            String[] ada = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                    .getAvailableFontFamilyNames();
+
+            for (String p : pilihan) {
+                for (String a : ada) {
+                    if (a.equalsIgnoreCase(p)) {
+                        return p;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+
+        }
+        return "SansSerif";
+    }
+
+    private static Font font(int gaya, int ukuran) {
+        return new Font(FONT, gaya, ukuran);
+    }
+
+    private static Color lebihTerang(Color c, int tambah) {
+        return new Color(
+                Math.min(255, c.getRed() + tambah),
+                Math.min(255, c.getGreen() + tambah),
+                Math.min(255, c.getBlue() + tambah)
+        );
+    }
+
+    private static Graphics2D halus(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
+        return g2;
+    }
+
+    private static class TombolModern extends JButton {
+        private final Color dasar;
+        private boolean hover = false;
+        private boolean aktif = false;
+
+        TombolModern(String teks, Color dasar) {
+            super(teks);
+            this.dasar = dasar;
+            setForeground(Color.WHITE);
+            setFont(font(Font.BOLD, 12));
+            setFocusPainted(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setOpaque(false);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            setBorder(BorderFactory.createEmptyBorder(9, 16, 9, 16));
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hover = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hover = false;
+                    repaint();
+                }
+            });
+        }
+
+        void setAktif(boolean aktif) {
+            this.aktif = aktif;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Color warna = aktif ? AKSEN : dasar;
+
+            if (getModel().isPressed()) {
+                warna = warna.darker();
+            } else if (hover) {
+                warna = lebihTerang(warna, 14);
+            }
+
+            Graphics2D g2 = halus(g);
+            g2.setColor(warna);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            g2.dispose();
+
+            super.paintComponent(g);
+        }
+    }
