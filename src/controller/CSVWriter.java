@@ -1,13 +1,14 @@
 package controller;
 
 import model.Putusan;
+import struktur.DynamicArray;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-//..
+
 public class CSVWriter {
 
     private static final String HEADER =
@@ -21,14 +22,22 @@ public class CSVWriter {
 
 
     public static int exportCSV(File file, PutusanController controller) throws IOException {
-        int n = controller.jumlahPutusan();
+        DynamicArray<Putusan> data = new DynamicArray<>();
+        for (int i = 0; i < controller.jumlahPutusan(); i++) {
+            data.add(controller.ambilPutusan(i));
+        }
+        return exportCSV(file, data);
+    }
+
+    public static int exportCSV(File file, DynamicArray<Putusan> data) throws IOException {
+        int n = data.size();
 
         try (BufferedWriter w = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8)) {
             w.write(HEADER);
             w.newLine();
 
             for (int i = 0; i < n; i++) {
-                Putusan p = controller.ambilPutusan(i);
+                Putusan p = data.get(i);
 
                 String[] kolom = {
                         p.getCaseId(),
@@ -55,6 +64,26 @@ public class CSVWriter {
                     baris.append(escape(kolom[k]));
                 }
                 w.write(baris.toString());
+                w.newLine();
+            }
+        }
+        return n;
+    }
+
+    public static int exportAuditCSV(File file, PutusanController controller)
+            throws IOException {
+        int n = controller.jumlahRiwayat();
+        try (BufferedWriter w = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8)) {
+            w.write("waktu,aktivitas");
+            w.newLine();
+
+            for (int i = 0; i < n; i++) {
+                String entri = controller.ambilRiwayat(i);
+                int pemisah = entri.indexOf(" | ");
+                String waktu = pemisah >= 0 ? entri.substring(0, pemisah) : "";
+                String aktivitas = pemisah >= 0
+                        ? entri.substring(pemisah + 3) : entri;
+                w.write(escape(waktu) + "," + escape(aktivitas));
                 w.newLine();
             }
         }

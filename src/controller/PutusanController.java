@@ -3,8 +3,13 @@ package controller;
 import model.Putusan;
 import struktur.DynamicArray;
 import struktur.AuditList;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class PutusanController {
+
+    private static final DateTimeFormatter FORMAT_WAKTU_AUDIT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private DynamicArray<Putusan> daftarPutusan;
     private AuditList<String> riwayat;
@@ -22,7 +27,7 @@ public class PutusanController {
 
         daftarPutusan.add(putusan);
 
-        riwayat.add(
+        catatAktivitas(
                 "Menambahkan putusan: " + putusan.getNomorPerkara()
         );
     }
@@ -35,7 +40,7 @@ public class PutusanController {
         Putusan putusanLama = daftarPutusan.get(posisi);
         daftarPutusan.set(posisi, putusanBaru);
 
-        riwayat.add(
+        catatAktivitas(
                 "Mengubah putusan: "
                         + putusanLama.getNomorPerkara()
                         + " menjadi "
@@ -46,7 +51,7 @@ public class PutusanController {
     public void hapusPutusan(int posisi) {
         Putusan putusan = daftarPutusan.remove(posisi);
 
-        riwayat.add(
+        catatAktivitas(
                 "Menghapus putusan: " + putusan.getNomorPerkara()
         );
     }
@@ -84,7 +89,7 @@ public class PutusanController {
             Putusan p = daftarPutusan.get(i);
 
             if (p.getNomorPerkara().equalsIgnoreCase(nomorPerkara)) {
-                riwayat.add("Mencari nomor perkara: " + nomorPerkara);
+                catatAktivitas("Mencari nomor perkara: " + nomorPerkara);
 
                 System.out.println("Data ditemukan!");
                 System.out.println("Jumlah langkah pencarian: " + langkah);
@@ -93,7 +98,7 @@ public class PutusanController {
             }
         }
 
-        riwayat.add("Mencari nomor perkara: " + nomorPerkara);
+        catatAktivitas("Mencari nomor perkara: " + nomorPerkara);
 
         System.out.println("Data tidak ditemukan.");
         System.out.println("Jumlah langkah pencarian: " + langkah);
@@ -110,7 +115,7 @@ public class PutusanController {
             Putusan p = daftarPutusan.get(i);
 
             if (p.getCaseId().equalsIgnoreCase(caseId)) {
-                riwayat.add("Mencari Case ID: " + caseId);
+                catatAktivitas("Mencari Case ID: " + caseId);
 
                 System.out.println("Data ditemukan!");
                 System.out.println("Jumlah langkah pencarian: " + langkah);
@@ -119,7 +124,7 @@ public class PutusanController {
             }
         }
 
-        riwayat.add("Mencari Case ID: " + caseId);
+        catatAktivitas("Mencari Case ID: " + caseId);
 
         System.out.println("Data tidak ditemukan.");
         System.out.println("Jumlah langkah pencarian: " + langkah);
@@ -141,13 +146,13 @@ public class PutusanController {
                     : p.getNomorPerkara();
 
             if (nilai != null && nilai.equalsIgnoreCase(target)) {
-                riwayat.add("Mencari " + jenis + ": " + target
+                catatAktivitas("Mencari " + jenis + ": " + target
                         + " (ditemukan, " + langkah + " langkah)");
                 return new HasilCari(true, i, langkah, p);
             }
         }
 
-        riwayat.add("Mencari " + jenis + ": " + target
+        catatAktivitas("Mencari " + jenis + ": " + target
                 + " (tidak ditemukan, " + langkah + " langkah)");
         return new HasilCari(false, -1, langkah, null);
     }
@@ -209,7 +214,20 @@ public class PutusanController {
     }
 
     public void catatRiwayat(String aktivitas) {
-        riwayat.add(aktivitas);
+        catatAktivitas(aktivitas);
+    }
+
+    private void catatAktivitas(String aktivitas) {
+        String waktu = LocalDateTime.now().format(FORMAT_WAKTU_AUDIT);
+        riwayat.add(waktu + " | " + (aktivitas == null ? "" : aktivitas));
+    }
+
+    public String ambilRiwayat(int posisi) {
+        return riwayat.get(posisi);
+    }
+
+    public int jumlahRiwayat() {
+        return riwayat.size();
     }
 
     public int jumlahPutusan() {
