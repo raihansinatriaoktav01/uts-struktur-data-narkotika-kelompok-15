@@ -731,3 +731,139 @@ public class MainFrame extends JFrame {
             }
         }
     }
+    private static class BatangPersen extends JComponent {
+        private final double bagian;
+
+        BatangPersen(double bagian) {
+            this.bagian = Math.max(0, Math.min(1, bagian));
+            setPreferredSize(new Dimension(100, 22));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            int tinggi = 10;
+            int y = (getHeight() - tinggi) / 2;
+
+            Graphics2D g2 = halus(g);
+            g2.setColor(INPUT);
+            g2.fillRoundRect(0, y, getWidth(), tinggi, tinggi, tinggi);
+
+            int isi = (int) Math.round(getWidth() * bagian);
+            if (isi > 0) {
+                g2.setColor(AKSEN);
+                g2.fillRoundRect(0, y, Math.max(isi, tinggi), tinggi, tinggi, tinggi);
+            }
+            g2.dispose();
+        }
+    }
+
+    // Kartu pembungkus bagian sidebar
+    private static class Kartu extends JPanel {
+        Kartu(String judul, JComponent isi) {
+            super(new BorderLayout(0, 12));
+            setOpaque(false);
+            setAlignmentX(Component.LEFT_ALIGNMENT);
+            setBorder(BorderFactory.createEmptyBorder(15, 16, 16, 16));
+
+            JLabel label = new JLabel(judul);
+            label.setFont(font(Font.BOLD, 14));
+            label.setForeground(TEKS);
+
+            add(label, BorderLayout.NORTH);
+            add(isi, BorderLayout.CENTER);
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return new Dimension(Integer.MAX_VALUE, getPreferredSize().height);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = halus(g);
+            g2.setColor(PANEL);
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            g2.setColor(GARIS);
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static class Chip extends JPanel {
+        private final JLabel nilai = new JLabel("-");
+
+        Chip(String judul) {
+            setOpaque(false);
+            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+            setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+
+            JLabel label = new JLabel(judul);
+            label.setFont(font(Font.BOLD, 10));
+            label.setForeground(TEKS_REdup);
+
+            nilai.setFont(font(Font.BOLD, 18));
+            nilai.setForeground(TEKS);
+
+            add(label);
+            add(Box.createVerticalStrut(2));
+            add(nilai);
+        }
+
+        void set(String teks, Color warna) {
+            nilai.setText(teks);
+            nilai.setForeground(warna);
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension d = super.getPreferredSize();
+            return new Dimension(Math.max(d.width, 118), d.height);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = halus(g);
+            g2.setColor(new Color(22, 28, 38));
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+            g2.setColor(GARIS);
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static class PanelSidebar extends JPanel implements Scrollable {
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle r, int orientation, int direction) {
+            return 18;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle r, int orientation, int direction) {
+            return 80;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
+    }
+
+    private static class ScrollBarModern extends BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            super.configureScrollBarColors();
+            thumbColor = new Color(78, 91, 112);
+            trackColor = LATAR;
+        }
