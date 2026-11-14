@@ -867,3 +867,134 @@ public class MainFrame extends JFrame {
             thumbColor = new Color(78, 91, 112);
             trackColor = LATAR;
         }
+        @Override
+        protected JButton createDecreaseButton(int orientation) {
+            return tombolKosong();
+        }
+
+        @Override
+        protected JButton createIncreaseButton(int orientation) {
+            return tombolKosong();
+        }
+
+        private JButton tombolKosong() {
+            JButton tombol = new JButton();
+            Dimension nol = new Dimension(0, 0);
+            tombol.setPreferredSize(nol);
+            tombol.setMinimumSize(nol);
+            tombol.setMaximumSize(nol);
+            return tombol;
+        }
+
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle r) {
+            g.setColor(trackColor);
+            g.fillRect(r.x, r.y, r.width, r.height);
+        }
+
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle r) {
+            if (r.isEmpty() || !scrollbar.isEnabled()) {
+                return;
+            }
+
+            Graphics2D g2 = halus(g);
+            g2.setColor(isThumbRollover() ? lebihTerang(thumbColor, 22) : thumbColor);
+            g2.fillRoundRect(r.x + 2, r.y + 2, r.width - 4, r.height - 4, 8, 8);
+            g2.dispose();
+        }
+    }
+
+
+    private void tampilkanSemua() {
+        model.setRowCount(0);
+
+        DynamicArray<Putusan> sumber = null;
+
+        if (kriteriaAktif != null) {
+            sumber = filterController.saring(kriteriaAktif);
+        }
+
+        if (modeUrut != 0) {
+            sumber = controller.urutkanBerdasarkanVonis(sumber, modeUrut == 1);
+        }
+
+        sumberTampil = sumber;
+
+        int jumlah = sumber == null
+                ? controller.jumlahPutusan()
+                : sumber.size();
+
+        for (int i = 0; i < jumlah; i++) {
+            Putusan p = sumber == null
+                    ? controller.ambilPutusan(i)
+                    : sumber.get(i);
+
+            model.addRow(new Object[]{
+                    p.getCaseId(),
+                    p.getNomorPerkara(),
+                    p.getPengadilan(),
+                    p.getTanggalPutusan(),
+                    p.getTerdakwaKode(),
+                    p.getJenisNarkotika(),
+                    p.getBeratBarangBuktiGram(),
+                    p.getPasalDakwaan(),
+                    p.getPasalTerbukti(),
+                    p.getTuntutanBulan(),
+                    p.getVonisBulan(),
+                    p.getDendaRupiah(),
+                    p.getBarangBukti(),
+                    p.getKeadaanMemberatkan(),
+                    p.getKeadaanMeringankan(),
+                    p.getSourcePages()
+            });
+        }
+
+        jumlahTampil = jumlah;
+        perbaruiStatus();
+        perbaruiRingkasan();
+    }
+
+    private void aturUrutan(int mode) {
+        modeUrut = mode;
+        perbaruiTombolUrut();
+        tampilkanSemua();
+
+        if (mode == 1) {
+            controller.catatRiwayat("Mengurutkan tampilan berdasarkan vonis (naik)");
+        } else if (mode == 2) {
+            controller.catatRiwayat("Mengurutkan tampilan berdasarkan vonis (turun)");
+        } else {
+            controller.catatRiwayat("Mengembalikan tampilan ke urutan asli");
+        }
+    }
+
+    private void cariPutusan() {
+        String kunci = inputCari.getText().trim();
+
+        if (kunci.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Masukkan Case ID atau Nomor Perkara yang ingin dicari."
+            );
+            return;
+        }
+
+        boolean lewatCaseId = pilihCaseId.isSelected();
+        String jenis = lewatCaseId ? "Case ID" : "Nomor Perkara";
+
+        HasilCari hasil = controller.cari(kunci, lewatCaseId);
+
+        if (!hasil.isDitemukan()) {
+            labelHasilCari.setText(
+                    "Tidak ditemukan  |  langkah: " + hasil.getLangkah()
+                            + " dari " + controller.jumlahPutusan()
+            );
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    jenis + " \"" + kunci + "\" tidak ditemukan.\n"
+                            + "Jumlah langkah pencarian: " + hasil.getLangkah()
+            );
+            return;
+        }
