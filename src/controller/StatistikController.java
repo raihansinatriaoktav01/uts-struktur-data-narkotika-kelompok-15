@@ -11,13 +11,11 @@ public class StatistikController {
         this.controller = controller;
     }
 
-    // Menghitung jumlah seluruh putusan
     public void tampilkanJumlahPutusan() {
         System.out.println("Jumlah seluruh putusan: "
                 + controller.jumlahPutusan());
     }
 
-    // Menghitung rata-rata vonis
     public void hitungRataRataVonis() {
         int jumlahData = controller.jumlahPutusan();
 
@@ -38,7 +36,6 @@ public class StatistikController {
         System.out.println("Rata-rata vonis: " + rataRata + " bulan");
     }
 
-    // Menghitung total denda
     public void hitungTotalDenda() {
         long totalDenda = 0;
 
@@ -50,7 +47,6 @@ public class StatistikController {
         System.out.println("Total denda: Rp" + totalDenda);
     }
 
-    // Menampilkan distribusi jenis narkotika
     public void tampilkanDistribusiNarkotika() {
         String[] jenis = new String[controller.jumlahPutusan()];
         int[] jumlah = new int[controller.jumlahPutusan()];
@@ -87,5 +83,89 @@ public class StatistikController {
         for (int i = 0; i < banyakJenis; i++) {
             System.out.println(jenis[i] + " : " + jumlah[i] + " putusan");
         }
+    }
+
+    public HasilAgregasi hitungAgregasi(DynamicArray<Putusan> sumber) {
+        int n = sumber == null ? controller.jumlahPutusan() : sumber.size();
+
+        long totalVonis = 0;
+        long totalDenda = 0;
+        DynamicArray<HasilAgregasi.Entri> distribusi = new DynamicArray<>();
+
+        for (int i = 0; i < n; i++) {
+            Putusan p = sumber == null
+                    ? controller.ambilPutusan(i)
+                    : sumber.get(i);
+
+            totalVonis += p.getVonisBulan();
+            totalDenda += p.getDendaRupiah();
+            hitungJenis(p.getJenisNarkotika(), distribusi);
+        }
+
+        urutkanDistribusi(distribusi);
+
+        double rataRata = n == 0 ? 0 : (double) totalVonis / n;
+        return new HasilAgregasi(n, rataRata, totalDenda, distribusi);
+    }
+
+    private void hitungJenis(String teks, DynamicArray<HasilAgregasi.Entri> distribusi) {
+        if (teks == null || teks.trim().isEmpty()) {
+            catatZat("Tidak diketahui", distribusi);
+            return;
+        }
+
+        String[] bagian = teks.split(",");
+
+        for (int i = 0; i < bagian.length; i++) {
+            String nama = normalisasiZat(bagian[i]);
+
+            if (!nama.isEmpty()) {
+                catatZat(nama, distribusi);
+            }
+        }
+    }
+
+    private String normalisasiZat(String zat) {
+        String nama = zat.trim();
+
+        if (nama.startsWith("(") && nama.endsWith(")") && nama.length() > 2) {
+            nama = nama.substring(1, nama.length() - 1).trim();
+        }
+
+        return nama.replaceAll("(?i)shabu", "Sabu");
+    }
+
+    private void catatZat(String nama, DynamicArray<HasilAgregasi.Entri> distribusi) {
+        for (int i = 0; i < distribusi.size(); i++) {
+            if (distribusi.get(i).getNama().equalsIgnoreCase(nama)) {
+                distribusi.get(i).tambah();
+                return;
+            }
+        }
+
+        distribusi.add(new HasilAgregasi.Entri(nama));
+    }
+
+    private void urutkanDistribusi(DynamicArray<HasilAgregasi.Entri> d) {
+        for (int i = 1; i < d.size(); i++) {
+            HasilAgregasi.Entri kunci = d.get(i);
+            int j = i - 1;
+
+            while (j >= 0 && d.get(j).getJumlah() < kunci.getJumlah()) {
+                d.set(j + 1, d.get(j));
+                j--;
+            }
+
+            d.set(j + 1, kunci);
+        }
+    }
+
+    public void tampilkanSemuaStatistik() {
+        System.out.println("\n===== STATISTIK PUTUSAN =====");
+
+        tampilkanJumlahPutusan();
+        hitungRataRataVonis();
+        hitungTotalDenda();
+        tampilkanDistribusiNarkotika();
     }
 }
