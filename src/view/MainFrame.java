@@ -382,3 +382,132 @@ public class MainFrame extends JFrame {
         area.add(labelStatus, BorderLayout.SOUTH);
         return area;
     }
+    private void gayaTabel() {
+        tabel.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tabel.setRowHeight(36);
+        tabel.setFont(font(Font.PLAIN, 13));
+        tabel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabel.setFillsViewportHeight(true);
+        tabel.setBackground(BARIS_GELAP);
+        tabel.setForeground(TEKS);
+        tabel.setSelectionBackground(PILIHAN);
+        tabel.setSelectionForeground(Color.WHITE);
+        tabel.setShowVerticalLines(false);
+        tabel.setShowHorizontalLines(true);
+        tabel.setGridColor(new Color(40, 48, 62));
+        tabel.setIntercellSpacing(new Dimension(0, 1));
+
+        Border isiSel = BorderFactory.createEmptyBorder(0, 12, 0, 12);
+
+        DefaultTableCellRenderer rendererIsi = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+
+                int kolomModel = table.convertColumnIndexToModel(column);
+                Object tampil = value;
+
+                // Denda ditampilkan berformat rupiah (nilai di model tetap angka)
+                if (kolomModel == 11 && value instanceof Number) {
+                    tampil = "Rp " + FORMAT_RUPIAH.format(((Number) value).longValue());
+                }
+
+                JLabel sel = (JLabel) super.getTableCellRendererComponent(
+                        table, tampil, false, false, row, column);
+
+                sel.setBorder(isiSel);
+                sel.setToolTipText(tampil == null ? null : String.valueOf(tampil));
+                sel.setBackground(isSelected
+                        ? PILIHAN
+                        : (row % 2 == 0 ? BARIS_GELAP : BARIS_TERANG));
+
+                if (isSelected) {
+                    sel.setForeground(Color.WHITE);
+                } else if (kolomModel == 0) {
+                    sel.setForeground(new Color(142, 172, 214));
+                } else if (kolomModel == 10) {
+                    sel.setForeground(EMAS);
+                } else {
+                    sel.setForeground(TEKS);
+                }
+
+                sel.setFont(font(
+                        kolomModel == 0 || kolomModel == 10 ? Font.BOLD : Font.PLAIN,
+                        13));
+                return sel;
+            }
+        };
+
+        for (int kolom = 0; kolom < tabel.getColumnCount(); kolom++) {
+            tabel.getColumnModel().getColumn(kolom).setCellRenderer(rendererIsi);
+        }
+
+        Border borderHeader = BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, AKSEN),
+                BorderFactory.createEmptyBorder(0, 12, 0, 12)
+        );
+
+        DefaultTableCellRenderer rendererHeader = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+
+                JLabel sel = (JLabel) super.getTableCellRendererComponent(
+                        table, value, false, false, row, column);
+
+                sel.setBorder(borderHeader);
+                sel.setBackground(new Color(38, 47, 62));
+                sel.setForeground(new Color(184, 196, 214));
+                sel.setFont(font(Font.BOLD, 12));
+                sel.setHorizontalAlignment(SwingConstants.LEFT);
+                return sel;
+            }
+        };
+
+        tabel.getTableHeader().setDefaultRenderer(rendererHeader);
+        tabel.getTableHeader().setReorderingAllowed(false);
+        tabel.getTableHeader().setBackground(new Color(38, 47, 62));
+        tabel.getTableHeader().setPreferredSize(new Dimension(0, 38));
+
+        int[] lebarKolom = {
+                90, 190, 210, 130,
+                120, 220, 170, 250,
+                250, 130, 120, 170,
+                300, 300, 300, 150
+        };
+
+        for (int i = 0; i < lebarKolom.length; i++) {
+            tabel.getColumnModel().getColumn(i).setPreferredWidth(lebarKolom[i]);
+        }
+    }
+
+    private void gayaScroll(JScrollPane panel) {
+        panel.getVerticalScrollBar().setUI(new ScrollBarModern());
+        panel.getHorizontalScrollBar().setUI(new ScrollBarModern());
+        panel.getVerticalScrollBar().setPreferredSize(new Dimension(12, 12));
+        panel.getHorizontalScrollBar().setPreferredSize(new Dimension(12, 12));
+        panel.getVerticalScrollBar().setUnitIncrement(18);
+        panel.getVerticalScrollBar().setBackground(LATAR);
+        panel.getHorizontalScrollBar().setBackground(LATAR);
+
+        JPanel sudut = new JPanel();
+        sudut.setBackground(LATAR);
+        panel.setCorner(ScrollPaneConstants.LOWER_RIGHT_CORNER, sudut);
+    }
+
+
+    private JPanel kolom() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        return panel;
+    }
+
+    private JComponent lebarPenuh(JComponent komponen) {
+        komponen.setAlignmentX(Component.LEFT_ALIGNMENT);
+        Dimension pref = komponen.getPreferredSize();
+        komponen.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
+        return komponen;
+    }
