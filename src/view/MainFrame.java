@@ -998,3 +998,214 @@ public class MainFrame extends JFrame {
             );
             return;
         }
+        String caseId = hasil.getPutusan().getCaseId();
+        int baris = cariBarisModel(caseId);
+
+        if (baris == -1 && kriteriaAktif != null) {
+            kosongkanFilter();
+            tampilkanSemua();
+            baris = cariBarisModel(caseId);
+        }
+
+        if (baris != -1) {
+            int tampil = tabel.convertRowIndexToView(baris);
+            tabel.setRowSelectionInterval(tampil, tampil);
+            tabel.scrollRectToVisible(tabel.getCellRect(tampil, 0, true));
+        }
+
+        labelHasilCari.setText(
+                "Ditemukan di posisi ke-" + (hasil.getPosisi() + 1)
+                        + " dari " + controller.jumlahPutusan()
+                        + "  |  langkah: " + hasil.getLangkah()
+        );
+    }
+
+    private Double parseDesimal(String teks) {
+        String bersih = teks.trim().replace(',', '.');
+
+        if (bersih.isEmpty()) {
+            return null;
+        }
+
+        double nilai = Double.parseDouble(bersih);
+
+        if (Double.isNaN(nilai) || Double.isInfinite(nilai)) {
+            throw new NumberFormatException("bukan angka biasa");
+        }
+
+        return nilai;
+    }
+
+    private Integer parseBulat(String teks) {
+        String bersih = teks.trim();
+
+        if (bersih.isEmpty()) {
+            return null;
+        }
+
+        return Integer.valueOf(bersih);
+    }
+
+    private void terapkanFilterGabungan() {
+        try {
+            Double beratMin = parseDesimal(inputBeratMin.getText());
+            Double beratMax = parseDesimal(inputBeratMax.getText());
+            Integer vonisMin = parseBulat(inputVonisMin.getText());
+            Integer vonisMax = parseBulat(inputVonisMax.getText());
+
+            if ((beratMin != null && beratMin < 0)
+                    || (beratMax != null && beratMax < 0)
+                    || (vonisMin != null && vonisMin < 0)
+                    || (vonisMax != null && vonisMax < 0)) {
+                JOptionPane.showMessageDialog(
+                        this, "Berat dan vonis tidak boleh negatif.");
+                return;
+            }
+
+            if (beratMin != null && beratMax != null && beratMin > beratMax) {
+                JOptionPane.showMessageDialog(
+                        this, "Berat minimum tidak boleh lebih besar dari maksimum.");
+                return;
+            }
+
+            if (vonisMin != null && vonisMax != null && vonisMin > vonisMax) {
+                JOptionPane.showMessageDialog(
+                        this, "Vonis minimum tidak boleh lebih besar dari maksimum.");
+                return;
+            }
+
+            KriteriaFilter kriteria = new KriteriaFilter(
+                    inputJenis.getText(),
+                    inputPasal.getText(),
+                    beratMin, beratMax,
+                    vonisMin, vonisMax
+            );
+
+            if (kriteria.kosong()) {
+                JOptionPane.showMessageDialog(
+                        this, "Isi minimal satu kriteria filter.");
+                return;
+            }
+
+            kriteriaAktif = kriteria;
+            tampilkanSemua();
+            filterController.catat(kriteria, jumlahTampil);
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Berat harus berupa angka (contoh 0.5) dan vonis berupa bilangan bulat."
+            );
+        }
+    }
+
+    private void kosongkanFilter() {
+        inputJenis.setText("");
+        inputPasal.setText("");
+        inputBeratMin.setText("");
+        inputBeratMax.setText("");
+        inputVonisMin.setText("");
+        inputVonisMax.setText("");
+        kriteriaAktif = null;
+    }
+
+    private void resetFilterGabungan() {
+        kosongkanFilter();
+        tampilkanSemua();
+        controller.catatRiwayat("Reset filter");
+    }
+
+    private void tampilkanAgregasi() {
+        if (controller.jumlahPutusan() == 0) {
+            JOptionPane.showMessageDialog(
+                    this, "Belum ada data. Impor CSV terlebih dahulu.");
+            return;
+        }
+
+        HasilAgregasi hasil = statistikController.hitungAgregasi(sumberTampil);
+
+        String cakupan = kriteriaAktif == null
+                ? "Seluruh data (" + controller.jumlahPutusan() + " putusan)"
+                : "Hasil filter (" + jumlahTampil + " dari "
+                + controller.jumlahPutusan() + " putusan)";
+
+        controller.catatRiwayat(
+                "Agregasi [" + cakupan + "]: " + hasil.getJumlahPerkara()
+                        + " perkara, rata-rata vonis " + hasil.rataRataVonisTeks()
+                        + ", total denda " + hasil.totalDendaTeks()
+        );
+
+        JOptionPane.showMessageDialog(
+                this,
+                buatPanelAgregasi(hasil, cakupan),
+                "Ringkasan Agregasi",
+                JOptionPane.PLAIN_MESSAGE
+        );
+    }
+
+    private JComponent buatPanelAgregasi(HasilAgregasi hasil, String cakupan) {
+        JLabel labelCakupan = new JLabel("Cakupan: " + cakupan);
+        labelCakupan.setFont(font(Font.PLAIN, 12));
+        labelCakupan.setForeground(TEKS_REdup);
+        labelCakupan.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        Chip chipPerkara = new Chip("JUMLAH PERKARA");
+        Chip chipVonis = new Chip("RATA-RATA VONIS");
+        Chip chipDenda = new Chip("TOTAL DENDA");
+        chipPerkara.set(String.valueOf(hasil.getJumlahPerkara()), TEKS);
+        chipVonis.set(hasil.rataRataVonisTeks(), TEKS);
+        chipDenda.set(hasil.totalDendaTeks(), EMAS);
+
+        JPanel barisChip = new JPanel(new GridLayout(1, 3, 10, 0));
+        barisChip.setOpaque(false);
+        barisChip.add(chipPerkara);
+        barisChip.add(chipVonis);
+        barisChip.add(chipDenda);
+        barisChip.setAlignmentX(Component.LEFT_ALIGNMENT);
+        barisChip.setMaximumSize(
+                new Dimension(Integer.MAX_VALUE, barisChip.getPreferredSize().height));
+
+        JLabel judulDistribusi = new JLabel("Distribusi Jenis Narkotika");
+        judulDistribusi.setFont(font(Font.BOLD, 14));
+        judulDistribusi.setForeground(TEKS);
+        judulDistribusi.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel catatan = new JLabel(
+                "Perkara dengan lebih dari satu zat dihitung pada tiap zat.");
+        catatan.setFont(font(Font.PLAIN, 12));
+        catatan.setForeground(TEKS_REdup);
+        catatan.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel daftar = new JPanel();
+        daftar.setOpaque(false);
+        daftar.setLayout(new BoxLayout(daftar, BoxLayout.Y_AXIS));
+
+        DynamicArray<HasilAgregasi.Entri> distribusi = hasil.getDistribusi();
+
+        for (int i = 0; i < distribusi.size(); i++) {
+            HasilAgregasi.Entri e = distribusi.get(i);
+            double bagian = hasil.getJumlahPerkara() == 0
+                    ? 0
+                    : (double) e.getJumlah() / hasil.getJumlahPerkara();
+
+            JLabel nama = new JLabel(e.getNama());
+            nama.setFont(font(Font.PLAIN, 13));
+            nama.setForeground(TEKS);
+            nama.setPreferredSize(new Dimension(190, 22));
+
+            JLabel angka = new JLabel(
+                    e.getJumlah() + " putusan  (" + Math.round(bagian * 100) + "%)");
+            angka.setFont(font(Font.BOLD, 12));
+            angka.setForeground(TEKS_REdup);
+            angka.setPreferredSize(new Dimension(130, 22));
+            angka.setHorizontalAlignment(SwingConstants.RIGHT);
+
+            JPanel baris = new JPanel(new BorderLayout(10, 0));
+            baris.setOpaque(false);
+            baris.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+            baris.add(nama, BorderLayout.WEST);
+            baris.add(new BatangPersen(bagian), BorderLayout.CENTER);
+            baris.add(angka, BorderLayout.EAST);
+            baris.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+            daftar.add(baris);
+        }
