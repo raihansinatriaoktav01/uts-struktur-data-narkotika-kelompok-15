@@ -247,3 +247,138 @@ public class MainFrame extends JFrame {
         body.add(buatAreaTabel(), BorderLayout.CENTER);
         return body;
     }
+    private JComponent buatSidebar() {
+        JPanel segmen = new JPanel(new GridLayout(1, 2, 6, 0));
+        segmen.setOpaque(false);
+        segmen.add(pilihCaseId);
+        segmen.add(pilihNomorPerkara);
+
+        TombolModern tombolCari = new TombolModern("Cari di Struktur", AKSEN);
+        tombolCari.addActionListener(e -> cariPutusan());
+        inputCari.addActionListener(e -> cariPutusan());
+
+        JPanel isiCari = kolom();
+        isiCari.add(lebarPenuh(segmen));
+        isiCari.add(Box.createVerticalStrut(10));
+        isiCari.add(lebarPenuh(inputCari));
+        isiCari.add(Box.createVerticalStrut(10));
+        isiCari.add(lebarPenuh(tombolCari));
+        isiCari.add(Box.createVerticalStrut(8));
+        labelHasilCari.setAlignmentX(Component.LEFT_ALIGNMENT);
+        isiCari.add(labelHasilCari);
+
+        JPanel pasanganBerat = new JPanel(new GridLayout(1, 2, 8, 0));
+        pasanganBerat.setOpaque(false);
+        pasanganBerat.add(inputBeratMin);
+        pasanganBerat.add(inputBeratMax);
+
+        JPanel pasanganVonis = new JPanel(new GridLayout(1, 2, 8, 0));
+        pasanganVonis.setOpaque(false);
+        pasanganVonis.add(inputVonisMin);
+        pasanganVonis.add(inputVonisMax);
+
+        TombolModern tombolTerapkan = new TombolModern("Terapkan", AKSEN);
+        TombolModern tombolReset = new TombolModern("Reset", NETRAL);
+        tombolTerapkan.addActionListener(e -> terapkanFilterGabungan());
+        tombolReset.addActionListener(e -> resetFilterGabungan());
+
+        JPanel barisTombol = new JPanel(new GridLayout(1, 2, 8, 0));
+        barisTombol.setOpaque(false);
+        barisTombol.add(tombolTerapkan);
+        barisTombol.add(tombolReset);
+
+        JPanel isiFilter = kolom();
+        isiFilter.add(labelKecil("Jenis narkotika"));
+        isiFilter.add(lebarPenuh(inputJenis));
+        isiFilter.add(Box.createVerticalStrut(10));
+        isiFilter.add(labelKecil("Pasal terbukti"));
+        isiFilter.add(lebarPenuh(inputPasal));
+        isiFilter.add(Box.createVerticalStrut(10));
+        isiFilter.add(labelKecil("Berat barang bukti (gram)"));
+        isiFilter.add(lebarPenuh(pasanganBerat));
+        isiFilter.add(Box.createVerticalStrut(10));
+        isiFilter.add(labelKecil("Vonis (bulan)"));
+        isiFilter.add(lebarPenuh(pasanganVonis));
+        isiFilter.add(Box.createVerticalStrut(14));
+        isiFilter.add(lebarPenuh(barisTombol));
+
+        tombolUrut[0].addActionListener(e -> aturUrutan(1));
+        tombolUrut[1].addActionListener(e -> aturUrutan(2));
+        tombolUrut[2].addActionListener(e -> aturUrutan(0));
+
+        JPanel barisUrut = new JPanel(new GridLayout(1, 3, 8, 0));
+        barisUrut.setOpaque(false);
+        barisUrut.add(tombolUrut[0]);
+        barisUrut.add(tombolUrut[1]);
+        barisUrut.add(tombolUrut[2]);
+        perbaruiTombolUrut();
+
+        JPanel isiUrut = kolom();
+        isiUrut.add(labelKecil("Urutkan tampilan berdasarkan vonis"));
+        isiUrut.add(lebarPenuh(barisUrut));
+
+        PanelSidebar sidebar = new PanelSidebar();
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setBackground(LATAR);
+        sidebar.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 6));
+        sidebar.add(new Kartu("Cari di Struktur", isiCari));
+        sidebar.add(Box.createVerticalStrut(14));
+        sidebar.add(new Kartu("Filter Gabungan", isiFilter));
+        sidebar.add(Box.createVerticalStrut(14));
+        sidebar.add(new Kartu("Urutan Tampilan", isiUrut));
+        return sidebar;
+    }
+
+    private JComponent buatAreaTabel() {
+        TombolModern tombolImpor = new TombolModern("Impor CSV", AKSEN);
+        TombolModern tombolTambah = new TombolModern("Tambah", HIJAU);
+        TombolModern tombolEdit = new TombolModern("Edit", NETRAL);
+        TombolModern tombolHapus = new TombolModern("Hapus", MERAH);
+        TombolModern tombolDetail = new TombolModern("Detail", NETRAL);
+        TombolModern tombolAgregasi = new TombolModern("Agregasi", UNGU);
+        TombolModern tombolAudit = new TombolModern("Audit", UNGU);
+        TombolModern tombolEkspor = new TombolModern("Ekspor CSV", NETRAL);
+
+        tombolImpor.addActionListener(e -> imporCSV());
+        tombolTambah.addActionListener(e -> tambahPutusan());
+        tombolEdit.addActionListener(e -> editPutusanTerpilih());
+        tombolHapus.addActionListener(e -> hapusPutusanTerpilih());
+        tombolDetail.addActionListener(e -> lihatDetailTerpilih());
+        tombolAgregasi.addActionListener(e -> tampilkanAgregasi());
+        tombolAudit.addActionListener(e -> tampilkanAudit());
+        tombolEkspor.addActionListener(e -> eksporCSV());
+        tombolEkspor.setToolTipText(
+                "Ekspor semua putusan atau data yang sedang ditampilkan ke CSV");
+
+        JPanel tombol = new JPanel(new GridLayout(2, 4, 8, 8));
+        tombol.setOpaque(false);
+        tombol.add(tombolImpor);
+        tombol.add(tombolTambah);
+        tombol.add(tombolEdit);
+        tombol.add(tombolHapus);
+        tombol.add(tombolDetail);
+        tombol.add(tombolAgregasi);
+        tombol.add(tombolAudit);
+        tombol.add(tombolEkspor);
+
+        JLabel judulTabel = new JLabel("Daftar Putusan");
+        judulTabel.setFont(font(Font.BOLD, 16));
+        judulTabel.setForeground(TEKS);
+
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setOpaque(false);
+        bar.add(judulTabel, BorderLayout.WEST);
+        bar.add(tombol, BorderLayout.EAST);
+
+        JScrollPane scroll = new JScrollPane(tabel);
+        scroll.getViewport().setBackground(BARIS_GELAP);
+        scroll.setBorder(BorderFactory.createLineBorder(GARIS));
+        gayaScroll(scroll);
+
+        JPanel area = new JPanel(new BorderLayout(0, 12));
+        area.setOpaque(false);
+        area.add(bar, BorderLayout.NORTH);
+        area.add(scroll, BorderLayout.CENTER);
+        area.add(labelStatus, BorderLayout.SOUTH);
+        return area;
+    }
