@@ -1422,3 +1422,383 @@ public class MainFrame extends JFrame {
                     nilai[14],
                     nilai[15]
             );
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Berat, tuntutan, vonis, dan denda harus berupa angka."
+            );
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Format tanggal salah. Gunakan YYYY-MM-DD, misalnya 2025-08-12."
+            );
+        }
+
+        return null;
+    }
+
+    private void tambahPutusan() {
+        String[] nilai = tampilkanForm(
+                "Tambah Putusan",
+                labelFormPutusan(),
+                null
+        );
+
+        if (nilai == null) {
+            return;
+        }
+
+        Putusan putusanBaru = buatPutusanDariForm(nilai, -1);
+
+        if (putusanBaru != null) {
+            controller.tambahPutusan(putusanBaru);
+            kosongkanFilter();
+            tampilkanSemua();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Putusan berhasil ditambahkan."
+            );
+        }
+    }
+
+    private void editPutusanTerpilih() {
+        int barisTabel = tabel.getSelectedRow();
+
+        if (barisTabel == -1) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Pilih data putusan yang ingin diedit terlebih dahulu."
+            );
+            return;
+        }
+
+        int barisModel = posisiStruktur(barisTabel);
+        Putusan dataLama = controller.ambilPutusan(barisModel);
+
+        String[] nilaiAwal = {
+                aman(dataLama.getCaseId()),
+                aman(dataLama.getNomorPerkara()),
+                aman(dataLama.getPengadilan()),
+                dataLama.getTanggalPutusan() == null
+                        ? ""
+                        : dataLama.getTanggalPutusan().toString(),
+                aman(dataLama.getTerdakwaKode()),
+                aman(dataLama.getJenisNarkotika()),
+                String.valueOf(dataLama.getBeratBarangBuktiGram()),
+                aman(dataLama.getPasalDakwaan()),
+                aman(dataLama.getPasalTerbukti()),
+                String.valueOf(dataLama.getTuntutanBulan()),
+                String.valueOf(dataLama.getVonisBulan()),
+                String.valueOf(dataLama.getDendaRupiah()),
+                aman(dataLama.getBarangBukti()),
+                aman(dataLama.getKeadaanMemberatkan()),
+                aman(dataLama.getKeadaanMeringankan()),
+                aman(dataLama.getSourcePages())
+        };
+
+        String[] nilaiBaru = tampilkanForm(
+                "Edit Putusan",
+                labelFormPutusan(),
+                nilaiAwal
+        );
+
+        if (nilaiBaru == null) {
+            return;
+        }
+
+        Putusan hasilEdit = buatPutusanDariForm(nilaiBaru, barisModel);
+
+        if (hasilEdit != null) {
+            controller.ubahPutusan(barisModel, hasilEdit);
+            tampilkanSemua();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Data putusan berhasil diperbarui."
+            );
+        }
+    }
+
+    private void hapusPutusanTerpilih() {
+        int barisTabel = tabel.getSelectedRow();
+
+        if (barisTabel == -1) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Pilih data yang ingin dihapus terlebih dahulu."
+            );
+            return;
+        }
+
+        int konfirmasi = JOptionPane.showConfirmDialog(
+                this,
+                "Yakin ingin menghapus putusan yang dipilih?",
+                "Konfirmasi Hapus",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (konfirmasi != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        int barisModel = posisiStruktur(barisTabel);
+        controller.hapusPutusan(barisModel);
+        tampilkanSemua();
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Putusan berhasil dihapus."
+        );
+    }
+
+    private void lihatDetailTerpilih() {
+        int barisTabel = tabel.getSelectedRow();
+
+        if (barisTabel == -1) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Pilih data yang ingin dilihat terlebih dahulu."
+            );
+            return;
+        }
+
+        int barisModel = tabel.convertRowIndexToModel(barisTabel);
+        StringBuilder detail = new StringBuilder();
+
+        for (int kolom = 0; kolom < model.getColumnCount(); kolom++) {
+            detail.append(model.getColumnName(kolom))
+                    .append(": ")
+                    .append(model.getValueAt(barisModel, kolom))
+                    .append("\n\n");
+        }
+
+        JTextArea areaDetail = new JTextArea(detail.toString(), 20, 50);
+        areaDetail.setEditable(false);
+        areaDetail.setLineWrap(true);
+        areaDetail.setWrapStyleWord(true);
+        areaDetail.setBackground(BARIS_GELAP);
+        areaDetail.setForeground(TEKS);
+        areaDetail.setCaretColor(Color.WHITE);
+        areaDetail.setFont(font(Font.PLAIN, 13));
+        areaDetail.setMargin(new Insets(10, 12, 10, 12));
+
+        JOptionPane.showMessageDialog(
+                this,
+                new JScrollPane(areaDetail),
+                "Detail Putusan",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    private void imporCSV() {
+        JFileChooser pemilihFile = new JFileChooser();
+        pemilihFile.setDialogTitle("Impor Data Putusan (CSV)");
+
+        if (pemilihFile.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        HasilImpor hasil = CSVReader.importCSV(
+                pemilihFile.getSelectedFile().getPath(),
+                controller
+        );
+
+        tampilkanSemua();
+
+        JTextArea areaHasil = new JTextArea(
+                hasil.ringkasan(controller.jumlahPutusan()), 18, 60
+        );
+        areaHasil.setEditable(false);
+        areaHasil.setLineWrap(true);
+        areaHasil.setWrapStyleWord(true);
+        areaHasil.setBackground(BARIS_GELAP);
+        areaHasil.setForeground(TEKS);
+        areaHasil.setFont(font(Font.PLAIN, 13));
+        areaHasil.setMargin(new Insets(10, 12, 10, 12));
+
+        JOptionPane.showMessageDialog(
+                this,
+                new JScrollPane(areaHasil),
+                "Hasil Impor CSV",
+                hasil.getDitolak() > 0 || hasil.jumlahPeringatan() > 0
+                        ? JOptionPane.WARNING_MESSAGE
+                        : JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    private void tampilkanAudit() {
+        controller.catatRiwayat("Membuka tampilan audit");
+
+        DefaultTableModel modelAudit = new DefaultTableModel(
+                new Object[]{"No.", "Waktu", "Aktivitas"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        for (int i = 0; i < controller.jumlahRiwayat(); i++) {
+            String entri = controller.ambilRiwayat(i);
+            int pemisah = entri.indexOf(" | ");
+            String waktu = pemisah >= 0 ? entri.substring(0, pemisah) : "-";
+            String aktivitas = pemisah >= 0
+                    ? entri.substring(pemisah + 3) : entri;
+            modelAudit.addRow(new Object[]{i + 1, waktu, aktivitas});
+        }
+
+        JTable tabelAudit = new JTable(modelAudit);
+        tabelAudit.setRowHeight(30);
+        tabelAudit.setFillsViewportHeight(true);
+        tabelAudit.setBackground(BARIS_GELAP);
+        tabelAudit.setForeground(TEKS);
+        tabelAudit.setSelectionBackground(PILIHAN);
+        tabelAudit.setSelectionForeground(Color.WHITE);
+        tabelAudit.setGridColor(GARIS);
+        tabelAudit.getTableHeader().setBackground(new Color(38, 47, 62));
+        tabelAudit.getTableHeader().setForeground(TEKS);
+        tabelAudit.getColumnModel().getColumn(0).setPreferredWidth(55);
+        tabelAudit.getColumnModel().getColumn(1).setPreferredWidth(155);
+        tabelAudit.getColumnModel().getColumn(2).setPreferredWidth(520);
+
+        JScrollPane scrollAudit = new JScrollPane(tabelAudit);
+        scrollAudit.setPreferredSize(new Dimension(760, 360));
+        scrollAudit.getViewport().setBackground(BARIS_GELAP);
+
+        TombolModern tombolEksporAudit = new TombolModern("Ekspor Audit CSV", AKSEN);
+        TombolModern tombolTutup = new TombolModern("Tutup", NETRAL);
+        JPanel aksi = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        aksi.setOpaque(false);
+        aksi.add(tombolEksporAudit);
+        aksi.add(tombolTutup);
+
+        JPanel isi = new JPanel(new BorderLayout(0, 12));
+        isi.setBackground(PANEL);
+        isi.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+        isi.add(scrollAudit, BorderLayout.CENTER);
+        isi.add(aksi, BorderLayout.SOUTH);
+
+        JDialog dialog = new JDialog(this, "Audit Aktivitas", true);
+        dialog.setContentPane(isi);
+        dialog.pack();
+        dialog.setMinimumSize(new Dimension(700, 360));
+        dialog.setLocationRelativeTo(this);
+        tombolTutup.addActionListener(e -> dialog.dispose());
+        tombolEksporAudit.addActionListener(e -> eksporAuditCSV(dialog));
+        dialog.setVisible(true);
+    }
+
+    private void eksporAuditCSV(Component induk) {
+        JFileChooser pemilihFile = new JFileChooser();
+        pemilihFile.setDialogTitle("Ekspor Riwayat Audit (CSV)");
+        pemilihFile.setSelectedFile(new File("RiwayatAudit.csv"));
+
+        if (pemilihFile.showSaveDialog(induk) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File file = pastikanEkstensiCsv(pemilihFile.getSelectedFile());
+        if (!konfirmasiTimpa(file, induk)) {
+            return;
+        }
+
+        try {
+            int jumlah = CSVWriter.exportAuditCSV(file, controller);
+            controller.catatRiwayat("Mengekspor riwayat audit ke " + file.getName());
+            JOptionPane.showMessageDialog(
+                    induk, jumlah + " entri audit berhasil diekspor ke CSV.");
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(
+                    induk,
+                    "Gagal mengekspor audit: " + ex.getMessage(),
+                    "Kesalahan",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private void eksporCSV() {
+        Object[] cakupan = {"Semua data", "Data yang sedang ditampilkan"};
+        int pilihanCakupan = JOptionPane.showOptionDialog(
+                this,
+                "Pilih data yang akan diekspor:",
+                "Cakupan Ekspor",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                cakupan,
+                cakupan[0]
+        );
+        if (pilihanCakupan < 0) {
+            return;
+        }
+
+        DynamicArray<Putusan> dataEkspor = new DynamicArray<>();
+        if (pilihanCakupan == 0 || sumberTampil == null) {
+            for (int i = 0; i < controller.jumlahPutusan(); i++) {
+                dataEkspor.add(controller.ambilPutusan(i));
+            }
+        } else {
+            for (int i = 0; i < sumberTampil.size(); i++) {
+                dataEkspor.add(sumberTampil.get(i));
+            }
+        }
+
+        JFileChooser pemilihFile = new JFileChooser();
+        pemilihFile.setDialogTitle("Ekspor Data Putusan (CSV)");
+        pemilihFile.setSelectedFile(new File(
+                pilihanCakupan == 0 ? "DataPutusan.csv" : "DataPutusanTampil.csv"));
+
+        int pilihan = pemilihFile.showSaveDialog(this);
+
+        if (pilihan != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File file = pastikanEkstensiCsv(pemilihFile.getSelectedFile());
+        if (!konfirmasiTimpa(file, this)) {
+            return;
+        }
+
+        try {
+            int jumlah = CSVWriter.exportCSV(file, dataEkspor);
+            String deskripsi = pilihanCakupan == 0
+                    ? "seluruh data" : "data yang sedang ditampilkan";
+            controller.catatRiwayat("Mengekspor " + deskripsi + " ("
+                    + jumlah + " putusan) ke " + file.getName());
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    jumlah + " data putusan berhasil diekspor ke CSV."
+            );
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Gagal mengekspor CSV: " + ex.getMessage(),
+                    "Kesalahan",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private File pastikanEkstensiCsv(File file) {
+        if (file.getName().toLowerCase(Locale.ROOT).endsWith(".csv")) {
+            return file;
+        }
+        return new File(file.getParentFile(), file.getName() + ".csv");
+    }
+
+    private boolean konfirmasiTimpa(File file, Component induk) {
+        if (!file.exists()) {
+            return true;
+        }
+        int konfirmasi = JOptionPane.showConfirmDialog(
+                induk,
+                "File sudah ada. Apakah ingin menimpanya?",
+                "Konfirmasi Ekspor",
+                JOptionPane.YES_NO_OPTION
+        );
+        return konfirmasi == JOptionPane.YES_OPTION;
+    }
+}
