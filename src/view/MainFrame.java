@@ -651,3 +651,83 @@ public class MainFrame extends JFrame {
             super.paintComponent(g);
         }
     }
+    private static class PilTogel extends JToggleButton {
+        PilTogel(String teks) {
+            super(teks);
+            setFont(font(Font.BOLD, 12));
+            setFocusPainted(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setOpaque(false);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = halus(g);
+
+            if (isSelected()) {
+                g2.setColor(AKSEN);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                setForeground(Color.WHITE);
+            } else {
+                g2.setColor(INPUT);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.setColor(GARIS);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                setForeground(TEKS_REdup);
+            }
+
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static class InputModern extends JTextField {
+        private final String petunjuk;
+
+        InputModern(String petunjuk) {
+            this.petunjuk = petunjuk;
+            setOpaque(false);
+            setForeground(TEKS);
+            setCaretColor(Color.WHITE);
+            setSelectionColor(PILIHAN);
+            setFont(font(Font.PLAIN, 13));
+            setBorder(BorderFactory.createEmptyBorder(9, 11, 9, 11));
+
+            addFocusListener(new FocusAdapter() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    repaint();
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = halus(g);
+            g2.setColor(INPUT);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            g2.setColor(isFocusOwner() ? AKSEN : GARIS);
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+            g2.dispose();
+
+            super.paintComponent(g);
+
+            if (getText().isEmpty() && petunjuk != null) {
+                Graphics2D g3 = halus(g);
+                g3.setColor(new Color(148, 160, 178, 140));
+                g3.setFont(getFont());
+                FontMetrics fm = g3.getFontMetrics();
+                int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g3.drawString(petunjuk, getInsets().left, y);
+                g3.dispose();
+            }
+        }
+    }
