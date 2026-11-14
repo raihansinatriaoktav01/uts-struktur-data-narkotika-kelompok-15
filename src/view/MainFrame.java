@@ -32,7 +32,6 @@ import java.util.Locale;
 
 public class MainFrame extends JFrame {
 
-    // ===== Palet warna (kalem, bernuansa biru-abu tua; tidak neon) =====
     private static final Color LATAR = new Color(22, 27, 36);
     private static final Color HEADER = new Color(27, 33, 44);
     private static final Color PANEL = new Color(33, 40, 53);
@@ -55,7 +54,6 @@ public class MainFrame extends JFrame {
             NumberFormat.getIntegerInstance(Locale.forLanguageTag("id-ID"));
 
     static {
-        // Tema dialog (JOptionPane) agar serasi dengan jendela utama
         UIManager.put("OptionPane.background", PANEL);
         UIManager.put("Panel.background", PANEL);
         UIManager.put("OptionPane.messageForeground", TEKS);
@@ -91,14 +89,11 @@ public class MainFrame extends JFrame {
     private final Chip chipTampil;
     private final Chip chipInvarian;
 
-    // Filter yang sedang aktif (null = tidak ada) dan jumlah baris tampil
     private KriteriaFilter kriteriaAktif = null;
     private int jumlahTampil = 0;
 
-    // Data yang sedang tampil (null = seluruh struktur utama); dipakai agregasi
     private DynamicArray<Putusan> sumberTampil = null;
 
-    // 0 = urutan asli struktur, 1 = vonis menaik, 2 = vonis menurun
     private int modeUrut = 0;
 
     public MainFrame(PutusanController controller) {
@@ -145,13 +140,11 @@ public class MainFrame extends JFrame {
         sorter = new TableRowSorter<>(model);
         tabel.setRowSorter(sorter);
 
-        // Pengurutan memakai algoritma buatan sendiri (tombol Urut Vonis),
-        // jadi pengurutan bawaan JTable (klik header) dinonaktifkan.
         for (int k = 0; k < model.getColumnCount(); k++) {
             sorter.setSortable(k, false);
         }
 
-        // Komponen input dan status
+
         inputJenis = buatInput("mis. Sabu");
         inputPasal = buatInput("mis. Pasal 114");
         inputBeratMin = buatInput("Min");
@@ -168,7 +161,6 @@ public class MainFrame extends JFrame {
         pilihCaseId.setSelected(true);
 
         labelHasilCari = new JLabel(" ") {
-            // Teks dibungkus HTML agar turun baris di dalam kartu sempit
             @Override
             public void setText(String teks) {
                 super.setText(teks == null ? null
@@ -203,7 +195,6 @@ public class MainFrame extends JFrame {
         tampilkanSemua();
     }
 
-    // ================== Pembentuk tampilan ==================
 
     private JComponent buatHeader() {
         JLabel judul = new JLabel("Sistem Data Putusan Narkotika");
@@ -239,6 +230,105 @@ public class MainFrame extends JFrame {
         header.add(chip, BorderLayout.EAST);
         return header;
     }
+
+    private JComponent buatBody() {
+        JScrollPane sidebar = new JScrollPane(buatSidebar());
+        sidebar.setBorder(BorderFactory.createEmptyBorder());
+        sidebar.getViewport().setBackground(LATAR);
+        sidebar.setHorizontalScrollBarPolicy(
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        sidebar.setPreferredSize(new Dimension(330, 100));
+        gayaScroll(sidebar);
+
+        JPanel body = new JPanel(new BorderLayout(16, 0));
+        body.setBackground(LATAR);
+        body.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        body.add(sidebar, BorderLayout.WEST);
+        body.add(buatAreaTabel(), BorderLayout.CENTER);
+        return body;
+    }
+    private JComponent buatSidebar() {
+        JPanel segmen = new JPanel(new GridLayout(1, 2, 6, 0));
+        segmen.setOpaque(false);
+        segmen.add(pilihCaseId);
+        segmen.add(pilihNomorPerkara);
+
+        TombolModern tombolCari = new TombolModern("Cari di Struktur", AKSEN);
+        tombolCari.addActionListener(e -> cariPutusan());
+        inputCari.addActionListener(e -> cariPutusan());
+
+        JPanel isiCari = kolom();
+        isiCari.add(lebarPenuh(segmen));
+        isiCari.add(Box.createVerticalStrut(10));
+        isiCari.add(lebarPenuh(inputCari));
+        isiCari.add(Box.createVerticalStrut(10));
+        isiCari.add(lebarPenuh(tombolCari));
+        isiCari.add(Box.createVerticalStrut(8));
+        labelHasilCari.setAlignmentX(Component.LEFT_ALIGNMENT);
+        isiCari.add(labelHasilCari);
+
+        JPanel pasanganBerat = new JPanel(new GridLayout(1, 2, 8, 0));
+        pasanganBerat.setOpaque(false);
+        pasanganBerat.add(inputBeratMin);
+        pasanganBerat.add(inputBeratMax);
+
+        JPanel pasanganVonis = new JPanel(new GridLayout(1, 2, 8, 0));
+        pasanganVonis.setOpaque(false);
+        pasanganVonis.add(inputVonisMin);
+        pasanganVonis.add(inputVonisMax);
+
+        TombolModern tombolTerapkan = new TombolModern("Terapkan", AKSEN);
+        TombolModern tombolReset = new TombolModern("Reset", NETRAL);
+        tombolTerapkan.addActionListener(e -> terapkanFilterGabungan());
+        tombolReset.addActionListener(e -> resetFilterGabungan());
+
+        JPanel barisTombol = new JPanel(new GridLayout(1, 2, 8, 0));
+        barisTombol.setOpaque(false);
+        barisTombol.add(tombolTerapkan);
+        barisTombol.add(tombolReset);
+
+        JPanel isiFilter = kolom();
+        isiFilter.add(labelKecil("Jenis narkotika"));
+        isiFilter.add(lebarPenuh(inputJenis));
+        isiFilter.add(Box.createVerticalStrut(10));
+        isiFilter.add(labelKecil("Pasal terbukti"));
+        isiFilter.add(lebarPenuh(inputPasal));
+        isiFilter.add(Box.createVerticalStrut(10));
+        isiFilter.add(labelKecil("Berat barang bukti (gram)"));
+        isiFilter.add(lebarPenuh(pasanganBerat));
+        isiFilter.add(Box.createVerticalStrut(10));
+        isiFilter.add(labelKecil("Vonis (bulan)"));
+        isiFilter.add(lebarPenuh(pasanganVonis));
+        isiFilter.add(Box.createVerticalStrut(14));
+        isiFilter.add(lebarPenuh(barisTombol));
+
+        tombolUrut[0].addActionListener(e -> aturUrutan(1));
+        tombolUrut[1].addActionListener(e -> aturUrutan(2));
+        tombolUrut[2].addActionListener(e -> aturUrutan(0));
+
+        JPanel barisUrut = new JPanel(new GridLayout(1, 3, 8, 0));
+        barisUrut.setOpaque(false);
+        barisUrut.add(tombolUrut[0]);
+        barisUrut.add(tombolUrut[1]);
+        barisUrut.add(tombolUrut[2]);
+        perbaruiTombolUrut();
+
+        JPanel isiUrut = kolom();
+        isiUrut.add(labelKecil("Urutkan tampilan berdasarkan vonis"));
+        isiUrut.add(lebarPenuh(barisUrut));
+
+        PanelSidebar sidebar = new PanelSidebar();
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setBackground(LATAR);
+        sidebar.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 6));
+        sidebar.add(new Kartu("Cari di Struktur", isiCari));
+        sidebar.add(Box.createVerticalStrut(14));
+        sidebar.add(new Kartu("Filter Gabungan", isiFilter));
+        sidebar.add(Box.createVerticalStrut(14));
+        sidebar.add(new Kartu("Urutan Tampilan", isiUrut));
+        return sidebar;
+    }
+
     private JComponent buatAreaTabel() {
         TombolModern tombolImpor = new TombolModern("Impor CSV", AKSEN);
         TombolModern tombolTambah = new TombolModern("Tambah", HIJAU);
@@ -375,6 +465,7 @@ public class MainFrame extends JFrame {
                 return sel;
             }
         };
+
         tabel.getTableHeader().setDefaultRenderer(rendererHeader);
         tabel.getTableHeader().setReorderingAllowed(false);
         tabel.getTableHeader().setBackground(new Color(38, 47, 62));
@@ -406,7 +497,6 @@ public class MainFrame extends JFrame {
         panel.setCorner(ScrollPaneConstants.LOWER_RIGHT_CORNER, sudut);
     }
 
-    // ---- Pembantu tata letak kartu ----
 
     private JPanel kolom() {
         JPanel panel = new JPanel();
@@ -421,7 +511,6 @@ public class MainFrame extends JFrame {
         komponen.setMaximumSize(new Dimension(Integer.MAX_VALUE, pref.height));
         return komponen;
     }
-
     private JLabel labelKecil(String teks) {
         JLabel label = new JLabel(teks);
         label.setFont(font(Font.PLAIN, 12));
@@ -448,6 +537,7 @@ public class MainFrame extends JFrame {
                 )
         );
     }
+
     private void perbaruiTombolUrut() {
         tombolUrut[0].setAktif(modeUrut == 1);
         tombolUrut[1].setAktif(modeUrut == 2);
@@ -482,7 +572,7 @@ public class MainFrame extends JFrame {
                 }
             }
         } catch (Exception ignored) {
-            // memakai font bawaan
+
         }
         return "SansSerif";
     }
@@ -498,6 +588,7 @@ public class MainFrame extends JFrame {
                 Math.min(255, c.getBlue() + tambah)
         );
     }
+
     private static Graphics2D halus(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
@@ -505,7 +596,6 @@ public class MainFrame extends JFrame {
         return g2;
     }
 
-    // Tombol bersudut membulat dengan efek hover dan tekan
     private static class TombolModern extends JButton {
         private final Color dasar;
         private boolean hover = false;
@@ -561,8 +651,6 @@ public class MainFrame extends JFrame {
             super.paintComponent(g);
         }
     }
-
-    // Pilihan ala segmented control (Case ID / Nomor Perkara)
     private static class PilTogel extends JToggleButton {
         PilTogel(String teks) {
             super(teks);
@@ -574,6 +662,7 @@ public class MainFrame extends JFrame {
             setCursor(new Cursor(Cursor.HAND_CURSOR));
             setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = halus(g);
@@ -595,7 +684,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // Kolom input membulat dengan teks petunjuk
     private static class InputModern extends JTextField {
         private final String petunjuk;
 
@@ -643,8 +731,6 @@ public class MainFrame extends JFrame {
             }
         }
     }
-
-    // Batang horizontal untuk persentase pada dialog agregasi
     private static class BatangPersen extends JComponent {
         private final double bagian;
 
@@ -703,7 +789,7 @@ public class MainFrame extends JFrame {
             super.paintComponent(g);
         }
     }
-    // Kartu angka kecil pada header
+
     private static class Chip extends JPanel {
         private final JLabel nilai = new JLabel("-");
 
@@ -747,7 +833,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // Panel sidebar yang lebarnya mengikuti viewport
     private static class PanelSidebar extends JPanel implements Scrollable {
         @Override
         public Dimension getPreferredScrollableViewportSize() {
@@ -775,7 +860,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // Scrollbar tipis tanpa tombol panah
     private static class ScrollBarModern extends BasicScrollBarUI {
         @Override
         protected void configureScrollBarColors() {
@@ -783,7 +867,6 @@ public class MainFrame extends JFrame {
             thumbColor = new Color(78, 91, 112);
             trackColor = LATAR;
         }
-
         @Override
         protected JButton createDecreaseButton(int orientation) {
             return tombolKosong();
@@ -821,13 +904,11 @@ public class MainFrame extends JFrame {
             g2.dispose();
         }
     }
-    // ================== Logika (tidak berubah) ==================
+
 
     private void tampilkanSemua() {
         model.setRowCount(0);
 
-        // Struktur utama tidak pernah diurutkan; tabel hanya menampilkan
-        // salinan terurut ketika modeUrut aktif.
         DynamicArray<Putusan> sumber = null;
 
         if (kriteriaAktif != null) {
@@ -874,7 +955,6 @@ public class MainFrame extends JFrame {
         perbaruiRingkasan();
     }
 
-    // Mengubah mode urutan tampilan (0 = asli, 1 = naik, 2 = turun)
     private void aturUrutan(int mode) {
         modeUrut = mode;
         perbaruiTombolUrut();
@@ -889,7 +969,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // Mencari Case ID atau Nomor Perkara di struktur utama dan melaporkan langkah
     private void cariPutusan() {
         String kunci = inputCari.getText().trim();
 
@@ -919,11 +998,9 @@ public class MainFrame extends JFrame {
             );
             return;
         }
-// Tampilan bisa terurut atau terfilter, jadi baris dicari lewat Case ID
         String caseId = hasil.getPutusan().getCaseId();
         int baris = cariBarisModel(caseId);
 
-        // Filter dilepas hanya jika baris hasil pencarian sedang tersembunyi
         if (baris == -1 && kriteriaAktif != null) {
             kosongkanFilter();
             tampilkanSemua();
@@ -969,7 +1046,6 @@ public class MainFrame extends JFrame {
         return Integer.valueOf(bersih);
     }
 
-    // Menerapkan semua kriteria yang terisi sekaligus (AND)
     private void terapkanFilterGabungan() {
         try {
             Double beratMin = parseDesimal(inputBeratMin.getText());
@@ -1032,13 +1108,13 @@ public class MainFrame extends JFrame {
         inputVonisMax.setText("");
         kriteriaAktif = null;
     }
+
     private void resetFilterGabungan() {
         kosongkanFilter();
         tampilkanSemua();
         controller.catatRiwayat("Reset filter");
     }
 
-    // Agregasi atas data yang sedang tampil (seluruh data atau hasil filter)
     private void tampilkanAgregasi() {
         if (controller.jumlahPutusan() == 0) {
             JOptionPane.showMessageDialog(
@@ -1158,7 +1234,6 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    // Baris di model tabel untuk sebuah Case ID (-1 jika tidak sedang tampil)
     private int cariBarisModel(String caseId) {
         for (int baris = 0; baris < model.getRowCount(); baris++) {
             if (caseId.equals(String.valueOf(model.getValueAt(baris, 0)))) {
@@ -1192,8 +1267,7 @@ public class MainFrame extends JFrame {
                         + (controller.validasiStruktur() ? "valid" : "RUSAK")
         );
     }
-    // Posisi baris tabel di struktur utama. Saat tampilan terurut,
-    // indeks tabel tidak sama dengan indeks struktur, jadi dicari via Case ID.
+
     private int posisiStruktur(int barisTabel) {
         int barisModel = tabel.convertRowIndexToModel(barisTabel);
         String caseId = String.valueOf(model.getValueAt(barisModel, 0));
@@ -1219,7 +1293,6 @@ public class MainFrame extends JFrame {
             form.add(labelField);
             form.add(input[i]);
         }
-
         form.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JScrollPane scrollForm = new JScrollPane(form);
         scrollForm.setBorder(BorderFactory.createLineBorder(GARIS));
@@ -1286,6 +1359,7 @@ public class MainFrame extends JFrame {
                 );
                 return null;
             }
+
             for (int i = 0; i < controller.jumlahPutusan(); i++) {
                 if (i == posisiYangDiedit) {
                     continue;
@@ -1374,6 +1448,7 @@ public class MainFrame extends JFrame {
         if (nilai == null) {
             return;
         }
+
         Putusan putusanBaru = buatPutusanDariForm(nilai, -1);
 
         if (putusanBaru != null) {
@@ -1498,6 +1573,7 @@ public class MainFrame extends JFrame {
                     .append(model.getValueAt(barisModel, kolom))
                     .append("\n\n");
         }
+
         JTextArea areaDetail = new JTextArea(detail.toString(), 20, 50);
         areaDetail.setEditable(false);
         areaDetail.setLineWrap(true);
@@ -1524,7 +1600,6 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        // Data valid ditambahkan ke struktur; caseId yang sudah ada ditolak.
         HasilImpor hasil = CSVReader.importCSV(
                 pemilihFile.getSelectedFile().getPath(),
                 controller
@@ -1572,6 +1647,7 @@ public class MainFrame extends JFrame {
                     ? entri.substring(pemisah + 3) : entri;
             modelAudit.addRow(new Object[]{i + 1, waktu, aktivitas});
         }
+
         JTable tabelAudit = new JTable(modelAudit);
         tabelAudit.setRowHeight(30);
         tabelAudit.setFillsViewportHeight(true);
